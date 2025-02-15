@@ -24,36 +24,125 @@ namespace bustub {
  */
 template <class T>
 auto Trie::Get(std::string_view key) const -> const T * {
-  throw NotImplementedException("Trie::Get is not implemented.");
+  auto root = root_;
+  if (root == nullptr) return nullptr;
 
-  // You should walk through the trie to find the node corresponding to the key. If the node doesn't exist, return
-  // nullptr. After you find the node, you should use `dynamic_cast` to cast it to `const TrieNodeWithValue<T> *`. If
-  // dynamic_cast returns `nullptr`, it means the type of the value is mismatched, and you should return nullptr.
-  // Otherwise, return the value.
+  for (auto c : key) {
+    if (root->children_.find(c) == root->children_.end()) {
+      return nullptr;
+    }
+    root = root->children_.at(c);
+  }
+
+  const auto *value_node = dynamic_cast<const TrieNodeWithValue<T> *>(root.get());
+  if (value_node != nullptr) {
+    return value_node->value_.get();
+  }
+  return nullptr;
 }
 
 /**
  * @brief Put a new key-value pair into the trie. If the key already exists, overwrite the value.
  * @return the new trie.
  */
+
+template <class T>
+void SolvePut(const std::shared_ptr<bustub::TrieNode> &node, std::string_view key, T value, unsigned len) {
+  if (len >= key.size()) return;
+  if (node->children_.find(key[len]) != node->children_.end()) {
+    if (len == key.size() - 1) {
+      std::shared_ptr<T> val_p = std::make_shared<T>(std::move(value));
+      auto val_node = std::make_shared<TrieNodeWithValue<T>>(node->children_[key[len]]->children_, std::move(val_p));
+      node->children_[key[len]] = val_node;
+    } else {
+      std::shared_ptr<bustub::TrieNode> next_node = node->children_[key[len]]->Clone();
+      SolvePut(next_node, key, std::move(value), len + 1);
+      node->children_[key[len]] = std::shared_ptr<const TrieNode>(next_node);
+    }
+  } else {
+    if (len == key.size() - 1) {
+      std::shared_ptr<T> val_p = std::make_shared<T>(std::move(value));
+      auto val_node = std::make_shared<TrieNodeWithValue<T>>(std::move(val_p));
+      node->children_[key[len]] = val_node;
+    } else {
+      const std::shared_ptr<bustub::TrieNode> next_node = std::make_unique<TrieNode>();
+      SolvePut(next_node, key, std::move(value), len + 1);
+      node->children_[key[len]] = std::shared_ptr<const TrieNode>(next_node);
+    }
+  }
+}
+
 template <class T>
 auto Trie::Put(std::string_view key, T value) const -> Trie {
-  // Note that `T` might be a non-copyable type. Always use `std::move` when creating `shared_ptr` on that value.
-  throw NotImplementedException("Trie::Put is not implemented.");
-
-  // You should walk through the trie and create new nodes if necessary. If the node corresponding to the key already
-  // exists, you should create a new `TrieNodeWithValue`.
+  if (key.empty()) {
+    std::shared_ptr<T> val_p = std::make_shared<T>(std::move(value));
+    std::unique_ptr<TrieNodeWithValue<T>> val_node = nullptr;
+    if (root_->children_.empty()) {
+      val_node = std::make_unique<TrieNodeWithValue<T>>(std::move(val_p));
+    } else {
+      val_node = std::make_unique<TrieNodeWithValue<T>>(root_->children_, std::move(val_p));
+    }
+    return Trie(std::move(val_node));
+  }
+  std::shared_ptr<TrieNode> val_node = nullptr;
+  if (root_ == nullptr) {
+    val_node = std::make_unique<TrieNode>();
+  } else {
+    val_node = root_->Clone();
+  }
+  SolvePut<T>(val_node, key, std::move(value), 0);
+  return Trie(std::move(val_node));
 }
 
 /**
  * @brief Remove the key from the trie.
  * @return If the key does not exist, return the original trie. Otherwise, returns the new trie.
  */
-auto Trie::Remove(std::string_view key) const -> Trie {
-  throw NotImplementedException("Trie::Remove is not implemented.");
 
-  // You should walk through the trie and remove nodes if necessary. If the node doesn't contain a value any more,
-  // you should convert it to `TrieNode`. If a node doesn't have children any more, you should remove it.
+int SolveRemove(const std::shared_ptr<bustub::TrieNode> &node, std::string_view key, unsigned len) {
+  if (len >= key.size()) return 1;
+  if (node->children_.find(key[len]) != node->children_.end()) {
+    if (len == key.size() - 1) {
+      if (node->children_[key[len]]->children_.empty()) {
+        node->children_.erase(key[len]);
+      } else {
+        auto new_node = std::make_shared<TrieNode>(node->children_[key[len]]->children_);
+        node->children_[key[len]] = new_node;
+      }
+      return 1;
+    } else {
+      std::shared_ptr<bustub::TrieNode> next_node = node->children_[key[len]]->Clone();
+      if (SolveRemove(next_node, key, len + 1)) {
+        if (next_node->children_.empty()) {
+          node->children_.erase(key[len]);
+        } else {
+          node->children_[key[len]] = next_node;
+        }
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+auto Trie::Remove(std::string_view key) const -> Trie {
+  if (key.empty()) {
+    std::unique_ptr<TrieNode> new_node = nullptr;
+    if (root_->children_.empty()) {
+      new_node = std::make_unique<TrieNode>();
+    } else {
+      new_node = std::make_unique<TrieNode>(root_->children_);
+    }
+    return Trie(std::move(new_node));
+  }
+  std::shared_ptr<TrieNode> new_node = nullptr;
+  if (root_ == nullptr) {
+    return *this;
+  } else {
+    new_node = root_->Clone();
+  }
+  SolveRemove(new_node, key, 0);
+  return Trie(std::move(new_node));
 }
 
 // Below are explicit instantiation of template functions.
