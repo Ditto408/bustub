@@ -36,8 +36,8 @@
 namespace bustub {
 
 // NOLINTNEXTLINE
-auto Planner::GetFuncCallFromFactory(const std::string &func_name, std::vector<AbstractExpressionRef> args)
-    -> AbstractExpressionRef {
+auto Planner::GetFuncCallFromFactory(const std::string &func_name,
+                                     std::vector<AbstractExpressionRef> args) -> AbstractExpressionRef {
   if (func_name == "lower" || func_name == "upper") {
     if (args.size() == 0 || args.size() > 1) {
       throw Exception(fmt::format("func {} should take 1 parameter.", func_name));
