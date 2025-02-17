@@ -113,7 +113,7 @@ int SolveRemove(const std::shared_ptr<bustub::TrieNode> &node, std::string_view 
     } else {
       std::shared_ptr<bustub::TrieNode> next_node = node->children_[key[len]]->Clone();
       if (SolveRemove(next_node, key, len + 1)) {
-        if (next_node->children_.empty()) {
+        if (next_node->children_.empty() && !next_node->is_value_node_) {
           node->children_.erase(key[len]);
         } else {
           node->children_[key[len]] = next_node;
@@ -142,6 +142,7 @@ auto Trie::Remove(std::string_view key) const -> Trie {
     new_node = root_->Clone();
   }
   SolveRemove(new_node, key, 0);
+  if (new_node->children_.empty()) return Trie();
   return Trie(std::move(new_node));
 }
 
