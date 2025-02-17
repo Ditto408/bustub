@@ -56,7 +56,7 @@ TEST(TrieDebugger, TestCase) {
 
   // (1) How many children nodes are there on the root?
   // Replace `CASE_1_YOUR_ANSWER` in `trie_answer.h` with the correct answer.
-  
+
   // auto a = trie.GetRoot()->children_.at('9').get()->children_.at('6').get()->children_.at('9');
   // const auto *value_node = dynamic_cast<const TrieNodeWithValue<unsigned> *>(a.get());
   // ;
